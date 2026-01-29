@@ -39,15 +39,14 @@ jobs:
       - name: Get kernel tag
         id: kernel
         run: |
-          if [ "${{ github.event.inputs.kernel_tag }}" != "" ] && [ "${{ github.event.inputs.kernel_tag }}" != "latest" ]; then
+          if [ -n "${{ github.event.inputs.kernel_tag }}" ] && [ "${{ github.event.inputs.kernel_tag }}" != "latest" ]; then
             echo "tag=${{ github.event.inputs.kernel_tag }}" >> $GITHUB_OUTPUT
           else
-            # Get latest tag from talos-pkgs
-            TAG=$(gh api repos/NebulaTechSolutions/talos-pkgs/commits/main --jq '.sha' | cut -c1-7)
+            # Get latest commit SHA from talos-pkgs using git
+            TAG=$(git ls-remote https://github.com/NebulaTechSolutions/talos-pkgs.git HEAD | cut -c1-7)
             echo "tag=$TAG" >> $GITHUB_OUTPUT
           fi
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          echo "Using kernel tag: $(cat $GITHUB_OUTPUT | grep tag | cut -d= -f2)"
 
       - name: Build installer
         run: |
