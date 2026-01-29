@@ -53,22 +53,40 @@ jobs:
           echo "tag=$TAG" >> $GITHUB_OUTPUT
           echo "Using kernel tag: $TAG"
 
+      - name: Build all required images
+        run: |
+          # Build imager and installer-base first, then installer
+          # Use our custom kernel from talos-pkgs
+          make docker-imager \
+            PLATFORM=linux/amd64 \
+            PKG_KERNEL=ghcr.io/nebulatechsolutions/kernel:${{ steps.kernel.outputs.tag }} \
+            PUSH=false
+
+          make docker-installer-base \
+            PLATFORM=linux/amd64 \
+            PKG_KERNEL=ghcr.io/nebulatechsolutions/kernel:${{ steps.kernel.outputs.tag }} \
+            PUSH=false
+        timeout-minutes: 90
+
       - name: Build installer
         run: |
-          # Use our custom kernel from talos-pkgs
           make installer \
             PLATFORM=linux/amd64 \
             PKG_KERNEL=ghcr.io/nebulatechsolutions/kernel:${{ steps.kernel.outputs.tag }} \
             PUSH=false
-        timeout-minutes: 60
+        timeout-minutes: 30
 
       - name: Save installer image
         run: |
           mkdir -p _out
-          # Get the installer image ID
-          INSTALLER_IMAGE=$(docker images --format "{{.Repository}}:{{.Tag}}" | grep installer | head -1)
-          docker save -o _out/installer-amd64.tar $INSTALLER_IMAGE
-          ls -lh _out/
+          ls -la _out/ || true
+          # The installer tar should be in _out
+          if [ -f _out/installer-amd64.tar ]; then
+            ls -lh _out/installer-amd64.tar
+          else
+            echo "Installer tar not found, checking for images..."
+            docker images | grep -i installer
+          fi
 
       - name: Upload installer artifact
         uses: actions/upload-artifact@v4
