@@ -53,40 +53,52 @@ jobs:
           echo "tag=$TAG" >> $GITHUB_OUTPUT
           echo "Using kernel tag: $TAG"
 
-      - name: Build all required images
+      - name: Get version info
+        id: version
         run: |
-          mkdir -p _out
-          # Build imager and installer-base first, then installer
-          # Use our custom kernel from talos-pkgs
+          # Use lowercase for registry paths
+          OWNER=$(echo "${{ github.repository_owner }}" | tr '[:upper:]' '[:lower:]')
+          # Use short SHA as tag
+          TAG=$(git rev-parse --short HEAD)
+          echo "owner=$OWNER" >> $GITHUB_OUTPUT
+          echo "tag=$TAG" >> $GITHUB_OUTPUT
+          echo "Registry: ${{ env.REGISTRY }}/$OWNER"
+          echo "Tag: $TAG"
+
+      - name: Build and push imager
+        run: |
+          # Build imager and push to registry
           # INSTALLER_ARCH=targetarch ensures we only build for amd64, not arm64
-          make docker-imager \
+          make registry-imager \
             PLATFORM=linux/amd64 \
             INSTALLER_ARCH=targetarch \
             PKG_KERNEL=ghcr.io/nebulatechsolutions/kernel:${{ steps.kernel.outputs.tag }} \
-            DEST=_out \
-            PUSH=false
+            PUSH=true \
+            REGISTRY=${{ env.REGISTRY }} \
+            USERNAME=${{ steps.version.outputs.owner }}
+        timeout-minutes: 60
 
-          # Load the imager into Docker
-          docker load -i _out/imager.tar
-
-          make docker-installer-base \
+      - name: Build and push installer-base
+        run: |
+          make registry-installer-base \
             PLATFORM=linux/amd64 \
             INSTALLER_ARCH=targetarch \
             PKG_KERNEL=ghcr.io/nebulatechsolutions/kernel:${{ steps.kernel.outputs.tag }} \
-            DEST=_out \
-            PUSH=false
-
-          # Load installer-base into Docker
-          docker load -i _out/installer-base.tar
-        timeout-minutes: 90
+            PUSH=true \
+            REGISTRY=${{ env.REGISTRY }} \
+            USERNAME=${{ steps.version.outputs.owner }}
+        timeout-minutes: 30
 
       - name: Build installer
         run: |
+          mkdir -p _out
           make installer \
             PLATFORM=linux/amd64 \
             INSTALLER_ARCH=targetarch \
             PKG_KERNEL=ghcr.io/nebulatechsolutions/kernel:${{ steps.kernel.outputs.tag }} \
-            PUSH=false
+            PUSH=false \
+            REGISTRY=${{ env.REGISTRY }} \
+            USERNAME=${{ steps.version.outputs.owner }}
         timeout-minutes: 30
 
       - name: Save installer image
@@ -117,4 +129,4 @@ jobs:
             PKG_KERNEL=ghcr.io/nebulatechsolutions/kernel:${{ steps.kernel.outputs.tag }} \
             PUSH=true \
             REGISTRY=${{ env.REGISTRY }} \
-            USERNAME=${{ github.repository_owner }}
+            USERNAME=${{ steps.version.outputs.owner }}
