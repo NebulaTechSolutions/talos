@@ -55,7 +55,7 @@ jobs:
           else
             # Default to latest known kernel tag from talos-pkgs
             # Update this when building new kernels
-            TAG="a77bd43"
+            TAG="e22e7df"
           fi
           echo "tag=$TAG" >> $GITHUB_OUTPUT
           echo "Using kernel tag: $TAG"
