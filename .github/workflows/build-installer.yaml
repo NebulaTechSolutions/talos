@@ -58,8 +58,10 @@ jobs:
           mkdir -p _out
           # Build imager and installer-base first, then installer
           # Use our custom kernel from talos-pkgs
+          # INSTALLER_ARCH=targetarch ensures we only build for amd64, not arm64
           make docker-imager \
             PLATFORM=linux/amd64 \
+            INSTALLER_ARCH=targetarch \
             PKG_KERNEL=ghcr.io/nebulatechsolutions/kernel:${{ steps.kernel.outputs.tag }} \
             DEST=_out \
             PUSH=false
@@ -69,6 +71,7 @@ jobs:
 
           make docker-installer-base \
             PLATFORM=linux/amd64 \
+            INSTALLER_ARCH=targetarch \
             PKG_KERNEL=ghcr.io/nebulatechsolutions/kernel:${{ steps.kernel.outputs.tag }} \
             DEST=_out \
             PUSH=false
@@ -81,6 +84,7 @@ jobs:
         run: |
           make installer \
             PLATFORM=linux/amd64 \
+            INSTALLER_ARCH=targetarch \
             PKG_KERNEL=ghcr.io/nebulatechsolutions/kernel:${{ steps.kernel.outputs.tag }} \
             PUSH=false
         timeout-minutes: 30
@@ -109,6 +113,7 @@ jobs:
         run: |
           make installer \
             PLATFORM=linux/amd64 \
+            INSTALLER_ARCH=targetarch \
             PKG_KERNEL=ghcr.io/nebulatechsolutions/kernel:${{ steps.kernel.outputs.tag }} \
             PUSH=true \
             REGISTRY=${{ env.REGISTRY }} \
