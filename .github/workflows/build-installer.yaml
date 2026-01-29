@@ -20,6 +20,9 @@ jobs:
     permissions:
       contents: read
       packages: write
+      # Note: GITHUB_TOKEN cannot read packages from other repos in the org.
+      # For now, the kernel package in talos-pkgs must be public, or use a PAT.
+      # To make public: gh api --method PATCH /orgs/NebulaTechSolutions/packages/container/kernel -f visibility=public
     steps:
       - name: Checkout
         uses: actions/checkout@v4
