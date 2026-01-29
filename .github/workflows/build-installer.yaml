@@ -55,17 +55,26 @@ jobs:
 
       - name: Build all required images
         run: |
+          mkdir -p _out
           # Build imager and installer-base first, then installer
           # Use our custom kernel from talos-pkgs
           make docker-imager \
             PLATFORM=linux/amd64 \
             PKG_KERNEL=ghcr.io/nebulatechsolutions/kernel:${{ steps.kernel.outputs.tag }} \
+            DEST=_out \
             PUSH=false
+
+          # Load the imager into Docker
+          docker load -i _out/imager.tar
 
           make docker-installer-base \
             PLATFORM=linux/amd64 \
             PKG_KERNEL=ghcr.io/nebulatechsolutions/kernel:${{ steps.kernel.outputs.tag }} \
+            DEST=_out \
             PUSH=false
+
+          # Load installer-base into Docker
+          docker load -i _out/installer-base.tar
         timeout-minutes: 90
 
       - name: Build installer
