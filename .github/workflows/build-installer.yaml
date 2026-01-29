@@ -110,6 +110,8 @@ jobs:
 
       - name: Export installer for artifact
         run: |
+          # Fix permissions on _out (created by Docker container as root)
+          sudo chown -R $USER:$USER _out || true
           mkdir -p _out
           # Get the image tag that was pushed
           TAG=$(git describe --tag --always --dirty --match 'v[0-9]*')
